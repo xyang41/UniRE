@@ -4,17 +4,18 @@ import os
 import logging
 import time
 
+SEED = 5216
 import random
-random.seed(5216)
+random.seed(SEED)
 
 import numpy as np
-np.random.seed(5216)
+np.random.seed(SEED)
 
 import torch
 import torch.nn as nn
-torch.manual_seed(5216)
-torch.cuda.manual_seed(5216)
-torch.cuda.manual_seed_all(5216)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
 
 from transformers import BertTokenizer, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
 

@@ -246,7 +246,9 @@ def process(source_file, ent_rel_file, target_file, pretrained_model, max_length
         data_file_path = os.path.dirname(source_file)
         get_ent_rel_file(ent_rel_file, data_file_path)
 
-    ent_rel_info = json.load(open(ent_rel_file, 'r', encoding='utf-8'))
+    with open(ent_rel_file, 'r', encoding='utf-8') as f:
+        ent_rel_info = json.load(f)
+    #ent_rel_info = json.load(open(ent_rel_file, 'r', encoding='utf-8'))
     
     if not os.path.exists(os.path.dirname(target_file)):
         os.mkdir(os.path.dirname(target_file))
