@@ -1,6 +1,7 @@
 import json
 import fire
 
+import numpy as np
 from transformers import AutoTokenizer
 
 
@@ -88,20 +89,24 @@ def add_joint_label(sent, ent_rel_info):
         sentence_length = len(sent['sentText'].split(' '))
     
     label_matrix = [[none_id for j in range(sentence_length)] for i in range(sentence_length)]
+    label_matrix = np.array(label_matrix)
     ent2offset = {}
     for ent in sent['entityMentions']:
         ent2offset[ent['emId']] = ent['offset']
-        for i in range(ent['offset'][0], ent['offset'][1]):
-            for j in range(ent['offset'][0], ent['offset'][1]):
-                label_matrix[i][j] = ent_rel_id[ent['label']]
-    for rel in sent['relationMentions']:
-        for i in range(ent2offset[rel['em1Id']][0], ent2offset[rel['em1Id']][1]):
-            for j in range(ent2offset[rel['em2Id']][0], ent2offset[rel['em2Id']][1]):
-                label_matrix[i][j] = ent_rel_id[rel['label']]
-                if ent_rel_id[rel['label']] in ent_rel_info['symmetric']:
-                    label_matrix[j][i] = ent_rel_id[rel['label']]
+        label_matrix[ent['offset'][0]: ent['offset'][1]][ent['offset'][0]: ent['offset'][1]] = ent_rel_id[ent['label']]
 
-    sent['jointLabelMatrix'] = label_matrix
+    for rel in sent['relationMentions']:
+        label_matrix[ent2offset[rel['em1Id']][0]: ent2offset[rel['em1Id']][1]][ent2offset[rel['em2Id']][0]: ent2offset[rel['em2Id']][1]] = ent_rel_id[rel['label']]
+        if ent_rel_id[rel['label']] in ent_rel_info['symmetric']:
+            label_matrix[ent2offset[ent2offset[rel['em2Id']][0]: ent2offset[rel['em2Id']][1]][rel['em1Id']][0]: ent2offset[rel['em1Id']][1]] = ent_rel_id[rel['label']]
+
+        # for i in range(ent2offset[rel['em1Id']][0], ent2offset[rel['em1Id']][1]):
+        #     for j in range(ent2offset[rel['em2Id']][0], ent2offset[rel['em2Id']][1]):
+        #         label_matrix[i][j] = ent_rel_id[rel['label']]
+        #         if ent_rel_id[rel['label']] in ent_rel_info['symmetric']:
+        #             label_matrix[j][i] = ent_rel_id[rel['label']]
+
+    sent['jointLabelMatrix'] = label_matrix.tolist()
 
 def add_joint_label_with_BItag(sent, ent_rel_info):
     """add_joint_label add joint labels table for sentences
@@ -114,6 +119,7 @@ def add_joint_label_with_BItag(sent, ent_rel_info):
         sentence_length = len(sent['sentText'].split(' '))
 
     label_matrix = [[none_id for j in range(sentence_length)] for i in range(sentence_length)]
+    label_matrix = np.array(label_matrix)
     ent2offset = {}
     for ent in sent['entityMentions']:
         ent2offset[ent['emId']] = ent['offset']
@@ -124,14 +130,18 @@ def add_joint_label_with_BItag(sent, ent_rel_info):
         ent['label'] = "B-" + ent['label']
 
     for rel in sent['relationMentions']:
-        for i in range(ent2offset[rel['em1Id']][0], ent2offset[rel['em1Id']][1]):
-            for j in range(ent2offset[rel['em2Id']][0], ent2offset[rel['em2Id']][1]):
-                #assert label_matrix[i][j] == 0, "Exist relation overlapping!"
-                label_matrix[i][j] = ent_rel_info['id'][rel['label']]
-                if ent_rel_info['id'][rel['label']] in ent_rel_info['symmetric']:
-                    label_matrix[j][i] = ent_rel_info['id'][rel['label']]
-    
-    sent['jointLabelMatrix'] = label_matrix
+        # for i in range(ent2offset[rel['em1Id']][0], ent2offset[rel['em1Id']][1]):
+        #     for j in range(ent2offset[rel['em2Id']][0], ent2offset[rel['em2Id']][1]):
+        #         #assert label_matrix[i][j] == 0, "Exist relation overlapping!"
+        #         label_matrix[i][j] = ent_rel_info['id'][rel['label']]
+        #         if ent_rel_info['id'][rel['label']] in ent_rel_info['symmetric']:
+        #             label_matrix[j][i] = ent_rel_info['id'][rel['label']]
+                
+        label_matrix[ent2offset[rel['em1Id']][0]: ent2offset[rel['em1Id']][1]][ent2offset[rel['em2Id']][0]: ent2offset[rel['em2Id']][1]] = ent_rel_info['id'][rel['label']]
+        if ent_rel_info['id'][rel['label']] in ent_rel_info['symmetric']:
+            label_matrix[ent2offset[ent2offset[rel['em2Id']][0]: ent2offset[rel['em2Id']][1]][rel['em1Id']][0]: ent2offset[rel['em1Id']][1]] = ent_rel_info['id'][rel['label']]
+
+    sent['jointLabelMatrix'] = label_matrix.tolist()
 
 def add_wordpiece_fields(sent, tokenizer):
     """add wordpiece related fields
@@ -248,7 +258,6 @@ def process(source_file, ent_rel_file, target_file, pretrained_model, max_length
 
     with open(ent_rel_file, 'r', encoding='utf-8') as f:
         ent_rel_info = json.load(f)
-    #ent_rel_info = json.load(open(ent_rel_file, 'r', encoding='utf-8'))
     
     if not os.path.exists(os.path.dirname(target_file)):
         os.mkdir(os.path.dirname(target_file))
