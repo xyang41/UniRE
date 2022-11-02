@@ -1,9 +1,9 @@
 save_dir: ckpt/demo
 
 data_dir: data/ACE2005/
-train_file: train.json
-dev_file: dev.json
-test_file: test.json
+train_file: 02/train.json
+dev_file: 02/dev.json
+test_file: 02/test.json
 ent_rel_file: ent_rel_file.json
 max_sent_len: 512
 max_wordpiece_len: 512
