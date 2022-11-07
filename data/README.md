@@ -1,9 +1,9 @@
 ## Dataset Processing
 
 ### Dataset Folder Format
-Each dataset should have 3 folders, named `00`, `01` and `02` respectively. 
-`00` contains the raw data, and different datasets may be stored in different formats. 
-`01` contains the transferred data, automatically transformed from `00` by `transfer.py`, which should be **designed based on your dataset**. And `02` includes the final processed version, which adds additional necessary features to `01` by given `process.py`, and will be directly inputted to UniRE model. 
+Each dataset should have 3 folders, named `00-raw`, `01-change-fields` and `02-matrix` respectively. 
+`00-raw` contains the raw data, and different datasets may be stored in different formats. 
+`01-change-fields` contains the transferred data, automatically transformed from `00-raw` by `transfer.py`, which should be **designed based on your dataset**. And `02-matrix` includes the final processed version, which adds additional necessary features to `01-change-fields` by given `process.py`, and will be directly inputted to UniRE model. 
 
 ### ACE2004([https://catalog.ldc.upenn.edu/LDC2005T09](https://catalog.ldc.upenn.edu/LDC2005T09))
 
