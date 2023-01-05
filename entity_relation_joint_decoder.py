@@ -19,9 +19,15 @@ torch.cuda.manual_seed_all(SEED)
 
 from transformers import BertTokenizer, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
 
+# origin unire eval
+from eval.prediction_outputs_old import print_predictions_for_joint_decoding as print_predictions_for_debug
+from eval.eval_old import eval_file as eval_file_for_debug
+
+# eval
+from eval.prediction_outputs import print_predictions_for_joint_decoding
+from eval.eval import eval_file
+
 from utils.argparse import ConfigurationParer
-from utils.prediction_outputs import print_predictions_for_joint_decoding
-from utils.eval import eval_file
 from inputs.vocabulary import Vocabulary
 from inputs.fields.token_field import TokenField
 from inputs.fields.raw_token_field import RawTokenField
@@ -203,9 +209,17 @@ def dev(cfg, dataset, model):
         all_outputs.extend(batch_outpus)
     logger.info(f"Cost time: {cost_time}s")
     dev_output_file = os.path.join(cfg.save_dir, "dev.output")
-    print_predictions_for_joint_decoding(all_outputs, dev_output_file, dataset.vocab)
-    eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-    joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file(dev_output_file, eval_metrics)
+    dev_gold_file = os.path.join(cfg.save_dir, "dev_gold.output")
+
+    if cfg.eval_type == "debug":
+        # old unire eval
+        print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
+        eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
+        joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics)
+    else:
+        print_predictions_for_joint_decoding(all_outputs, dev_output_file, dev_gold_file, dataset.vocab)
+        ent_score, exact_rel_score = eval_file(dev_output_file, dev_gold_file, entity_metrics=["exact"], relation_metrics=["exact"])
+    
     return ent_score + exact_rel_score
 
 
@@ -226,9 +240,16 @@ def test(cfg, dataset, model):
     logger.info(f"Cost time: {cost_time}s")
 
     test_output_file = os.path.join(cfg.save_dir, "test.output")
-    print_predictions_for_joint_decoding(all_outputs, test_output_file, dataset.vocab)
-    eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-    eval_file(test_output_file, eval_metrics)
+    test_gold_file = os.path.join(cfg.save_dir, "test_gold.output")
+    
+    if cfg.eval_type == "debug":
+        # old unire eval
+        print_predictions_for_debug(all_outputs, test_output_file, dataset.vocab)
+        eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
+        eval_file_for_debug(test_output_file, eval_metrics)
+    else:
+        print_predictions_for_joint_decoding(all_outputs, test_output_file, test_gold_file, dataset.vocab)
+        eval_file(test_output_file, test_gold_file, entity_metrics=["exact"], relation_metrics=["exact"])
 
 
 def main():

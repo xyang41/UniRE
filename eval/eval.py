@@ -9,6 +9,8 @@ import argparse
 from collections import defaultdict
 import difflib
 
+logger = logging.getLogger(__name__)
+
 def get_longest_match(s1, s2):
     '''
     find the longest continuous overlapping substring between s1 and s2.
@@ -95,19 +97,23 @@ def evaluation(pred_inss, gold_inss, obj, is_equal_ops):
     tp = sum([stat[arg]["tp"] for arg in stat])
     num_gold = sum([stat[arg]["gold"] for arg in stat])
     num_pred = sum([stat[arg]["pred"] for arg in stat])
-    output(tp, num_pred, num_gold, "overall scores ")
+    p, r, f1 = output(tp, num_pred, num_gold, "overall scores ")
     for arg in stat:
         output(stat[arg]["tp"], stat[arg]["pred"], stat[arg]["gold"], 
                 "argument type {} ".format(arg))
+
+    return p, r, f1
 
 def output(tp, num_pred, num_gold, prefix):
     p = float(tp)/num_pred if num_pred != 0 else 0
     r = float(tp)/num_gold if num_gold != 0 else 0
     f1 = 2*p*r/(p+r) if p+r != 0 else 0
 
-    print(prefix + "tp={}, num_pred={}, num_gold={}, "\
-            "P={:.2f}, R={:.2f}, F={:.2f}".format(
-                tp, num_pred, num_gold, p, r, f1))
+    logger.info(prefix + "tp={}, num_pred={}, num_gold={}, "\
+                    "P={:.2f}, R={:.2f}, F={:.2f}".format(
+                    tp, num_pred, num_gold, p, r, f1))
+
+    return p, r, f1
 
 entity_metrics = {
         "exact": compare_entity_exact,
@@ -121,22 +127,27 @@ relation_metrics = {
         "string": compare_relation_string
         }
 
-def main():
-    pred_inss = read_output(cmds.pred_file)
-    gold_inss = read_output(cmds.gold_file)
+def eval_file(pred_file, gold_file, entity_metrics=["exact"], relation_metrics=["exact"]):
+    pred_inss = read_output(pred_file)
+    gold_inss = read_output(gold_file)
     if len(pred_inss) != len(gold_inss):
         logging.error("different sample size")
         exit(1)
-    for m in cmds.entity_metrics:
+
+    for m in entity_metrics:
         is_equal_ops = itertools.repeat(entity_metrics[m], len(pred_inss))
-        print(10*"=" + " entity:" + m + 10*"=")
-        evaluation(pred_inss, gold_inss, "entity", is_equal_ops)
-    for m in cmds.relation_metrics:
+        logger.info(10*"=" + " entity:" + m + 10*"=")
+        ne_p, ne_r, ne_f1 = evaluation(pred_inss, gold_inss, "entity", is_equal_ops)
+    
+    for m in relation_metrics:
         is_equal_ops = (lambda x, y: 
                 relation_metrics[m](x, y, p_ins["entity"], g_ins["entity"])
                 for p_ins, g_ins in zip(pred_inss, gold_inss))
-        print(10*"=" + " relation:" + m + 10*"=")
-        evaluation(pred_inss, gold_inss, "relation", is_equal_ops)
+        logger.info(10*"=" + " relation:" + m + 10*"=")
+        re_p, re_r, re_f1 = evaluation(pred_inss, gold_inss, "relation", is_equal_ops)
+
+    return ne_f1, re_f1
+
 
 def build_cmd_parser():
     cmd_parser = argparse.ArgumentParser(description="a (stand alone) script for "\
@@ -174,4 +185,4 @@ if __name__ == '__main__':
     cmds = cmd_parser.parse_args()
     logging.basicConfig(filename=os.path.basename(cmds.pred_file)+'.log',
             encoding='utf-8', level=logging.DEBUG)
-    main()
+    eval_file(cmds.pred_file, cmds.gold_file, cmds.entity_metrics, cmds.relation_metrics)

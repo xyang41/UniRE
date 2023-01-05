@@ -194,7 +194,16 @@ class ConfigurationParer():
                   '--device',
                   type=int,
                   default=-1,
-                  help='cpu: device = -1, gpu: gpu device id(device >= 0).')
+                  help='cpu: device = -1, gpu: gpu device id(device >= 0).')    
+        
+        # evaluation configurations
+        group = self.parser.add_argument_group('Eval')
+        group.add('-eval_type',
+                  '--eval_type',
+                  type=str,
+                  choices=["train", "debug"],
+                  default="train",
+                  help="evaluation type, 'train' or 'debug'")
 
         # logging configurations
         group = self.parser.add_argument_group('logging')

@@ -39,3 +39,4 @@ logging_steps: 32
 validate_every: 20000
 device: -1
 log_file: train.log
+eval_type: train # debug
