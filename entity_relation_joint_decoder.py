@@ -151,7 +151,7 @@ def train(cfg, dataset, model):
                     best_f1 = dev_f1
                     logger.info("Save model...")
                     #torch.save(model.state_dict(), open(cfg.best_model_path, "wb"))
-                    torch.save(model.state_dict())
+                    torch.save(model.state_dict(), cfg.best_model_path)
                 elif last_epoch != epoch:
                     early_stop_cnt += 1
                     if early_stop_cnt > cfg.early_stop:
@@ -210,15 +210,15 @@ def dev(cfg, dataset, model):
     logger.info(f"Cost time: {cost_time}s")
     dev_output_file = os.path.join(cfg.save_dir, "dev.output")
     dev_gold_file = os.path.join(cfg.save_dir, "dev_gold.output")
-
+    
     if cfg.eval_type == "debug":
         # old unire eval
         print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
         eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-        joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics)
+        joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics, cfg)
     else:
         print_predictions_for_joint_decoding(all_outputs, dev_output_file, dev_gold_file, dataset.vocab)
-        ent_score, exact_rel_score = eval_file(dev_output_file, dev_gold_file, entity_metrics=["exact"], relation_metrics=["exact"])
+        ent_score, exact_rel_score = eval_file(dev_output_file, dev_gold_file, entity_metric=["exact"], relation_metric=["exact"])
     
     return ent_score + exact_rel_score
 
@@ -246,11 +246,10 @@ def test(cfg, dataset, model):
         # old unire eval
         print_predictions_for_debug(all_outputs, test_output_file, dataset.vocab)
         eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-        eval_file_for_debug(test_output_file, eval_metrics)
+        eval_file_for_debug(test_output_file, eval_metrics, cfg)
     else:
         print_predictions_for_joint_decoding(all_outputs, test_output_file, test_gold_file, dataset.vocab)
-        eval_file(test_output_file, test_gold_file, entity_metrics=["exact"], relation_metrics=["exact"])
-
+        eval_file(test_output_file, test_gold_file, entity_metric=["exact"], relation_metric=["exact"])
 
 def main():
     # config settings
@@ -345,7 +344,6 @@ def main():
     model = EntRelJointDecoder(cfg=cfg, vocab=vocab, ent_rel_file=ent_rel_file)
 
     if cfg.test and os.path.exists(cfg.best_model_path):
-        #state_dict = torch.load(open(cfg.best_model_path, 'rb'), map_location=lambda storage, loc: storage)
         state_dict = torch.load(cfg.best_model_path)
         model.load_state_dict(state_dict)
         logger.info("Loading best training model {} successfully for testing.".format(cfg.best_model_path))

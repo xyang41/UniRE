@@ -127,19 +127,19 @@ relation_metrics = {
         "string": compare_relation_string
         }
 
-def eval_file(pred_file, gold_file, entity_metrics=["exact"], relation_metrics=["exact"]):
+def eval_file(pred_file, gold_file, entity_metric=["exact"], relation_metric=["exact"]):
     pred_inss = read_output(pred_file)
     gold_inss = read_output(gold_file)
     if len(pred_inss) != len(gold_inss):
         logging.error("different sample size")
         exit(1)
 
-    for m in entity_metrics:
+    for m in entity_metric:
         is_equal_ops = itertools.repeat(entity_metrics[m], len(pred_inss))
         logger.info(10*"=" + " entity:" + m + 10*"=")
         ne_p, ne_r, ne_f1 = evaluation(pred_inss, gold_inss, "entity", is_equal_ops)
     
-    for m in relation_metrics:
+    for m in relation_metric:
         is_equal_ops = (lambda x, y: 
                 relation_metrics[m](x, y, p_ins["entity"], g_ins["entity"])
                 for p_ins, g_ins in zip(pred_inss, gold_inss))
