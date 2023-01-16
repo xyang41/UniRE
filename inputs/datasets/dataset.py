@@ -108,6 +108,39 @@ class Dataset():
                 logger.info("{} dataset's {}: max_len={}, min_len={}.".format(
                     instance_name, key, max(seq_len), min(seq_len)))
 
+    def add_adj_matrix_field(self, field_name, source_key=None, file_path_dict=dict()):
+        """This function add adjacent matrices information,
+        as a new created field to this dataset for GCN layers
+        
+        Arguments:
+            field_name {str} -- field name
+            source_key {str} -- indicate key in data file
+            file_path_dict {dict} -- file path dictionary for related train/dev/test adj files, such ad 'data/ACE05/adj/'
+        """
+        assert file_path_dict.keys() == self.instance_dict.keys(), "The keys of adj-file-path dictionary {} does not match with instance_dict's {}.".format(
+                file_path_dict.keys(), self.instance_dict.keys())
+
+        assert field_name not in self.datasets['train'].keys(), "{} --- a repeated field name for adjacent matrices data.".format(field_name)
+
+        for instance_name, _ in self.instance_dict.items(): 
+            dataset = self.datasets[instance_name]
+            with open(file_path_dict[instance_name], "rb") as f:
+                adj_data = pickle.load(f)
+                if source_key is None:
+                    adj_field = adj_data
+                else:
+                    adj_field = []
+                    # delete illegal adj data when matching with main data
+                    cnt = 0
+                    for a_data in adj_data:
+                        if len(a_data[source_key]) == len(dataset['tokens'][cnt]):
+                            adj_field.append(a_data[source_key])
+                            cnt += 1
+                    #print("Adj_field_length: ", len(adj_field))
+                    #print("dataset tokens length: ", len(dataset['tokens']))
+                    assert len(adj_field) == len(dataset['tokens']), "Adj_{} file has a wrong length.".format(instance_name)
+                self.datasets[instance_name][field_name] = adj_field
+
     def get_batch(self, instance_name, batch_size, sort_namespace=None):
         """get_batch gets batch data and padding
 

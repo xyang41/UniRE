@@ -50,6 +50,9 @@ class ConfigurationParer():
         self.parser.add('-max_wordpiece_len', '--max_wordpiece_len', type=int, default=512, help='max sentence length.')
         self.parser.add('-test', '--test', action='store_true', help='testing mode')
 
+        # Add graph structure related data file path...
+        group.add('-adj_dir', '--adj_dir', type=str, required=True, help='adj save folder.')
+
     def add_model_cfgs(self):
         """This function adds model (network) arguments: embedding, hidden unit...
         """
@@ -91,6 +94,16 @@ class ConfigurationParer():
         # loss
         group = self.parser.add_argument_group('Loss')
         group.add('--label_imbalance', '--label_imbalance', action='store_true', help='add label_imbalance processing in element loss.')
+
+        # gcn related configurations
+        group.add('--add_adj', '--add_adj', action='store_true', help='add adjacent matrix structure')
+        group.add('-gcn_layers', '--gcn_layers', type=int, default=0, help='number of gcn layers.')
+        group.add('-gcn_dropout', '--gcn_dropout', type=float, default=0.1, help='dropout rate between gcn layers stacked up.')
+        group.add('-adj_dropout', '--adj_dropout', type=float, default=0.0, help='adj matrices dropout rate.')
+        group.add('--prune', '--prune', action='store_true', help='prune unsupervised structures hardly')
+        group.add('-min_threshold', '--min_threshold', type=float, default=0.1, help='edge weights under the min_threshold will be set to 0.0.')
+        group.add('-max_threshold', '--max_threshold', type=float, default=0.4, help='edge weights under the max_threshold will be set to 1.0.')
+
 
     def add_optimizer_cfgs(self):
         """This function adds optimizer arguments

@@ -8,6 +8,8 @@ from models.embedding_models.bert_embedding_model import BertEmbedModel
 from models.embedding_models.pretrained_embedding_model import PretrainedEmbedModel
 from modules.token_embedders.bert_encoder import BertLinear
 
+from models.graph_models.gnn_biaffine import GNNBiaffine
+
 logger = logging.getLogger(__name__)
 
 
@@ -85,6 +87,12 @@ class EntRelJointDecoder(nn.Module):
                             ((self.rel_ids[0] + self.rel_ids[-1]) / 2) * len(self.rel_ids), \
                             "Relation ids must be sequential."
 
+        # Add GCN model
+        self.add_adj = cfg.add_adj
+        self.gcn_layers = cfg.gcn_layers
+        if self.gcn_layers > 0:
+            self.gcn_model = GNNBiaffine(cfg, input_size=self.encoder_output_size, vocab=self.vocab)
+
     def forward(self, batch_inputs):
         """forward
 
@@ -113,6 +121,12 @@ class EntRelJointDecoder(nn.Module):
 
         batch_joint_score = torch.einsum('bxi, oij, byj -> boxy', batch_seq_tokens_head_repr, self.U,
                                          batch_seq_tokens_tail_repr).permute(0, 2, 3, 1)
+
+        # Add graph structure
+        if self.add_adj:
+            batch_graph = self.gcn_model(batch_inputs) if self.gcn_layers > 0 \
+                                    else batch_graph = batch_inputs['adj_fw']
+            batch_joint_score = batch_joint_score + batch_graph
 
         batch_normalized_joint_score = torch.softmax(
             batch_joint_score, dim=-1) * batch_inputs['joint_label_matrix_mask'].unsqueeze(-1).float()
