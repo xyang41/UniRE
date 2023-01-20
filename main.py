@@ -24,8 +24,8 @@ from eval.prediction_outputs_old import print_predictions_for_joint_decoding as 
 from eval.eval_old import eval_file as eval_file_for_debug
 
 # eval
-from eval.prediction_outputs import print_predictions_for_joint_decoding
-from eval.eval import eval_file
+#from eval.prediction_outputs import print_predictions_for_joint_decoding
+#from eval.eval import eval_file
 
 from utils.argparse import ConfigurationParer
 from inputs.vocabulary import Vocabulary
@@ -48,11 +48,11 @@ def step(cfg, model, batch_inputs, device):
     batch_inputs["wordpiece_tokens"] = torch.LongTensor(batch_inputs["wordpiece_tokens"])
     batch_inputs["wordpiece_tokens_index"] = torch.LongTensor(batch_inputs["wordpiece_tokens_index"])
     batch_inputs["wordpiece_segment_ids"] = torch.LongTensor(batch_inputs["wordpiece_segment_ids"])
-
-    # Add GCN related data
+    
+    #add GCN related data
     if cfg.add_adj:
         batch_inputs["adj_fw"] = torch.FloatTensor(batch_inputs["adj_fw"])
-
+    
     if device > -1:
         batch_inputs["tokens"] = batch_inputs["tokens"].cuda(device=device, non_blocking=True)
         batch_inputs["joint_label_matrix"] = batch_inputs["joint_label_matrix"].cuda(device=device, non_blocking=True)
@@ -62,10 +62,9 @@ def step(cfg, model, batch_inputs, device):
         batch_inputs["wordpiece_tokens_index"] = batch_inputs["wordpiece_tokens_index"].cuda(device=device,
                                                                                              non_blocking=True)
         batch_inputs["wordpiece_segment_ids"] = batch_inputs["wordpiece_segment_ids"].cuda(device=device,
-        
+                                                                                           non_blocking=True)
         if cfg.add_adj:
             batch_inputs["adj_fw"] = batch_inputs["adj_fw"].cuda(device=device, non_blocking=True)
-                                                                                   non_blocking=True)
 
     outputs = model(batch_inputs)
     batch_outputs = []
@@ -218,14 +217,10 @@ def dev(cfg, dataset, model):
     dev_output_file = os.path.join(cfg.save_dir, "dev.output")
     dev_gold_file = os.path.join(cfg.save_dir, "dev_gold.output")
     
-    if cfg.eval_type == "debug":
-        # old unire eval
-        print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
-        eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-        joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics, cfg)
-    else:
-        print_predictions_for_joint_decoding(all_outputs, dev_output_file, dev_gold_file, dataset.vocab)
-        ent_score, exact_rel_score = eval_file(dev_output_file, dev_gold_file, entity_metric=["exact"], relation_metric=["exact"])
+    # old unire eval
+    print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
+    eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
+    joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics, cfg)
     
     return ent_score + exact_rel_score
 
@@ -249,14 +244,10 @@ def test(cfg, dataset, model):
     test_output_file = os.path.join(cfg.save_dir, "test.output")
     test_gold_file = os.path.join(cfg.save_dir, "test_gold.output")
     
-    if cfg.eval_type == "debug":
-        # old unire eval
-        print_predictions_for_debug(all_outputs, test_output_file, dataset.vocab)
-        eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-        eval_file_for_debug(test_output_file, eval_metrics, cfg)
-    else:
-        print_predictions_for_joint_decoding(all_outputs, test_output_file, test_gold_file, dataset.vocab)
-        eval_file(test_output_file, test_gold_file, entity_metric=["exact"], relation_metric=["exact"])
+    #old unire eval
+    print_predictions_for_debug(all_outputs, test_output_file, dataset.vocab)
+    eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
+    eval_file_for_debug(test_output_file, eval_metrics, cfg)
 
 def main():
     # config settings
@@ -341,8 +332,9 @@ def main():
                               contain_unk_namespace=contain_unk_namespace)
     wo_padding_namespace = ["separate_positions", "span2ent", "span2rel"]
     ace_dataset.set_wo_padding_namespace(wo_padding_namespace=wo_padding_namespace)
-
-    # add graph structure
+    
+    
+    #add graph structure
     if cfg.add_adj:
         adj_file_path = {'train': os.path.join(cfg.adj_dir, "train.adj"),
                          'dev': os.path.join(cfg.adj_dir, "dev.adj"), 

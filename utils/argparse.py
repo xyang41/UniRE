@@ -51,7 +51,7 @@ class ConfigurationParer():
         self.parser.add('-test', '--test', action='store_true', help='testing mode')
 
         # Add graph structure related data file path...
-        group.add('-adj_dir', '--adj_dir', type=str, required=True, help='adj save folder.')
+        self.parser.add('-adj_dir', '--adj_dir', type=str, required=False, help='adj save folder.')
 
     def add_model_cfgs(self):
         """This function adds model (network) arguments: embedding, hidden unit...
@@ -255,7 +255,7 @@ class ConfigurationParer():
 
         if not os.path.exists(cfg.save_dir):
             os.makedirs(cfg.save_dir)
-
+        
         cfg.best_model_path = os.path.join(cfg.save_dir, 'best_model')
         cfg.last_model_path = os.path.join(cfg.save_dir, 'last_model')
         cfg.vocabulary_file = os.path.join(cfg.save_dir, 'vocabulary.pickle')
@@ -265,7 +265,7 @@ class ConfigurationParer():
             os.makedirs(cfg.model_checkpoints_dir)
 
         assert os.path.exists(cfg.data_dir), f"dataset directory {cfg.data_dir} Not Exists!!!"
-        for file in ['train_file', 'dev_file', 'test_file', 'ent_rel_file']:
+        for file in ['train_file', 'dev_file', 'test_file', 'ent_rel_file', 'adj_dir']:
             if getattr(cfg, file, None) is not None:
                 setattr(cfg, file, os.path.join(cfg.data_dir, getattr(cfg, file, None)))
 

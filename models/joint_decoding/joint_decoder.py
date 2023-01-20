@@ -125,7 +125,7 @@ class EntRelJointDecoder(nn.Module):
         # Add graph structure
         if self.add_adj:
             batch_graph = self.gcn_model(batch_inputs) if self.gcn_layers > 0 \
-                                    else batch_graph = batch_inputs['adj_fw']
+                                    else batch_inputs['adj_fw'].unsqueeze(dim=-1)
             batch_joint_score = batch_joint_score + batch_graph
 
         batch_normalized_joint_score = torch.softmax(
