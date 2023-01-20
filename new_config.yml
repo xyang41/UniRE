@@ -1,5 +1,5 @@
-save_dir: ckpt/demo
-data_dir: data/ACE2005/
+save_dir: ckpt/ace2005_bert
+data_dir: data/entity-relation/ACE2005
 train_file: 02-matrix/train.json
 dev_file: 02-matrix/dev.json
 test_file: 02-matrix/test.json
@@ -19,7 +19,7 @@ separate_threshold: 1.4
 
 # structure related
 gcn_layers: 2
-# adj_dir: adj/ 
+adj_dir: adj/bert-base-cased/bert-attn-mean-eye-norm/bert-attn-layer0
 
 gradient_clipping: 5.0
 learning_rate: 5e-5
