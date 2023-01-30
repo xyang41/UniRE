@@ -35,7 +35,7 @@ from inputs.fields.map_token_field import MapTokenField
 from inputs.instance import Instance
 from inputs.datasets.dataset import Dataset
 from inputs.dataset_readers.ace_reader_for_joint_decoding import ACEReaderForJointDecoding
-from models.joint_decoding.joint_decoder import EntRelJointDecoder
+from models.joint_decoding.joint_decoder_2gnn import EntRelJointDecoder
 from utils.nn_utils import get_n_trainable_parameters
 
 logger = logging.getLogger(__name__)

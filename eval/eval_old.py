@@ -438,7 +438,8 @@ def report(counts):
     logger.info("recall: {:6.2f}%".format(100 * r))
     logger.info("f1: {:6.2f}%".format(100 * f))
 
-    score = (p, r, f)
+    #score = (p, r, f)
+    score = f
 
     for type in counts.pred_correct_types_cnt:
         p, r, f = calculate_metrics(counts.pred_correct_types_cnt[type], counts.pred_types_cnt[type],
