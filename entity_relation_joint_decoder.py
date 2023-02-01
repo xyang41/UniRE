@@ -221,9 +221,7 @@ def dev(cfg, dataset, model):
     print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
     eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
     joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics, cfg)
-    
     return ent_score + exact_rel_score
-
 
 def test(cfg, dataset, model):
     logger.info("Testing starting...")

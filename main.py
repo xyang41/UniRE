@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+import re
 import os
 import logging
 import time
@@ -37,6 +38,8 @@ from inputs.datasets.dataset import Dataset
 from inputs.dataset_readers.ace_reader_for_joint_decoding import ACEReaderForJointDecoding
 from models.joint_decoding.joint_decoder import EntRelJointDecoder
 from utils.nn_utils import get_n_trainable_parameters
+
+import neptune.new as neptune
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ def step(cfg, model, batch_inputs, device):
     return outputs['element_loss'], outputs['symmetric_loss'], outputs['implication_loss']
 
 
-def train(cfg, dataset, model):
+def train(cfg, dataset, model, run):
     logger.info("Training starting...")
 
     for name, param in model.named_parameters():
@@ -138,6 +141,7 @@ def train(cfg, dataset, model):
     last_epoch = 1
     batch_id = 0
     best_f1 = 0.0
+    best_epoch = 0
     early_stop_cnt = 0
     accumulation_steps = 0
     model.zero_grad()
@@ -151,10 +155,10 @@ def train(cfg, dataset, model):
                 model.zero_grad()
 
             if epoch > cfg.pretrain_epochs:
-                dev_f1 = dev(cfg, dataset, model)
+                dev_f1 = dev(cfg, dataset, model, run)
                 if dev_f1 > best_f1:
                     early_stop_cnt = 0
-                    best_f1 = dev_f1
+                    best_f1, best_epoch = dev_f1, epoch
                     logger.info("Save model...")
                     #torch.save(model.state_dict(), open(cfg.best_model_path, "wb"))
                     torch.save(model.state_dict(), cfg.best_model_path)
@@ -181,7 +185,11 @@ def train(cfg, dataset, model):
             logger.info(
                 "Epoch: {} Batch: {} Loss: {} (Element_loss: {} Symmetric_loss: {} Implication_loss: {})".format(
                     epoch, batch_id, loss.item(), element_loss.item(), symmetric_loss.item(), implication_loss.item()))
-
+            run['train/loss'].log(loss.item())
+            run['train/element_loss'].log(element_loss.item())
+            run['train/symmetric_loss'].log(symmetric_loss.item())
+            run['train/implication_loss'].log(implication_loss.item())
+            
         if cfg.gradient_accumulation_steps > 1:
             loss /= cfg.gradient_accumulation_steps
 
@@ -197,10 +205,10 @@ def train(cfg, dataset, model):
     #state_dict = torch.load(open(cfg.best_model_path, "rb"), map_location=lambda storage, loc: storage)
     state_dict = torch.load(cfg.best_model_path)
     model.load_state_dict(state_dict)
-    test(cfg, dataset, model)
+    test(cfg, dataset, model, run)
+    run['best/best_epoch'] = best_epoch
 
-
-def dev(cfg, dataset, model):
+def dev(cfg, dataset, model, run):
     logger.info("Validate starting...")
     model.zero_grad()
 
@@ -221,9 +229,17 @@ def dev(cfg, dataset, model):
     print_predictions_for_debug(all_outputs, dev_output_file, dataset.vocab)
     eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
     joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(dev_output_file, eval_metrics, cfg)
-    return ent_score + exact_rel_score
+   
+    run['dev/ent/p'].log('{0:.4f}'.format(ent_score['p']))
+    run['dev/ent/r'].log('{0:.4f}'.format(ent_score['r']))
+    run['dev/ent/f'].log('{0:.4f}'.format(ent_score['f']))
+    run['dev/rel/p'].log('{0:.4f}'.format(exact_rel_score['p']))
+    run['dev/rel/r'].log('{0:.4f}'.format(exact_rel_score['r']))
+    run['dev/rel/f'].log('{0:.4f}'.format(exact_rel_score['f']))
+   
+    return ent_score['f'] + exact_rel_score['f']
 
-def test(cfg, dataset, model):
+def test(cfg, dataset, model, run):
     logger.info("Testing starting...")
     model.zero_grad()
 
@@ -245,7 +261,18 @@ def test(cfg, dataset, model):
     #old unire eval
     print_predictions_for_debug(all_outputs, test_output_file, dataset.vocab)
     eval_metrics = ['joint-label', 'separate-position', 'ent', 'exact-rel', 'overlap-rel']
-    eval_file_for_debug(test_output_file, eval_metrics, cfg)
+    joint_label_score, separate_position_score, ent_score, exact_rel_score, overlap_rel_score = eval_file_for_debug(test_output_file, eval_metrics, cfg)
+    
+    run['test/ent/p'].log('{0:.4f}'.format(ent_score['p']))
+    run['test/ent/r'].log('{0:.4f}'.format(ent_score['r']))
+    run['test/ent/f'].log('{0:.4f}'.format(ent_score['f']))
+    run['test/rel/p'].log('{0:.4f}'.format(exact_rel_score['p']))
+    run['test/rel/r'].log('{0:.4f}'.format(exact_rel_score['r']))
+    run['test/rel/f'].log('{0:.4f}'.format(exact_rel_score['f']))
+    
+    logger.info("------------------------------Final Test Results------------------------------")
+    logger.info("Entity f1: {:6.3f}%".format(100 * ent_score['f']))
+    logger.info("Exact Relation f1: {:6.3f}%".format(100 * exact_rel_score['f']))
 
 def main():
     # config settings
@@ -263,12 +290,19 @@ def main():
     # random.seed(cfg.seed)
     # torch.manual_seed(cfg.seed)
     # np.random.seed(cfg.seed)
-
+    
     if cfg.device > -1 and not torch.cuda.is_available():
         logger.error('config conflicts: no gpu available, use cpu for training.')
         cfg.device = -1
     if cfg.device > -1:
         torch.cuda.manual_seed(cfg.seed)
+    
+    # Setup neptune
+    run = neptune.init_run(project="xyang/UniRE-unsup", 
+                            mode="offline")
+    run['params'] = vars(cfg)
+    run["sys/tags"].add(cfg.data_dir.split('/')[-1])
+    run["sys/tags"].add("seed="+str(SEED))
 
     # define fields
     tokens = TokenField("tokens", "tokens", "tokens", True)
@@ -334,11 +368,15 @@ def main():
     
     #add graph structure
     if cfg.add_adj:
+        run["sys/tags"].add("add_adj")
+        run["sys/tags"].add("gcn_layer="+str(cfg.gcn_layers))
+        run["sys/tags"].add("L"+re.sub('[^1-9]', "", cfg.adj_dir.split('/')[-1]))
+
         adj_file_path = {'train': os.path.join(cfg.adj_dir, "train.adj"),
                          'dev': os.path.join(cfg.adj_dir, "dev.adj"), 
                          'test': os.path.join(cfg.adj_dir, "test.adj")}
         ace_dataset.add_adj_matrix_field('adj_fw', 'adj_fw', adj_file_path)
-
+        
     if cfg.test:
         vocab = Vocabulary.load(cfg.vocabulary_file)
     else:
@@ -356,10 +394,10 @@ def main():
         model.cuda(device=cfg.device)
 
     if cfg.test:
-        dev(cfg, ace_dataset, model)
-        test(cfg, ace_dataset, model)
+        dev(cfg, ace_dataset, model, run)
+        test(cfg, ace_dataset, model, run)
     else:
-        train(cfg, ace_dataset, model)
+        train(cfg, ace_dataset, model, run)
 
 
 if __name__ == '__main__':

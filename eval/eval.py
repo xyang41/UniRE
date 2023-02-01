@@ -145,8 +145,8 @@ def eval_file(pred_file, gold_file, entity_metric=["exact"], relation_metric=["e
                 for p_ins, g_ins in zip(pred_inss, gold_inss))
         logger.info(10*"=" + " relation:" + m + 10*"=")
         re_p, re_r, re_f1 = evaluation(pred_inss, gold_inss, "relation", is_equal_ops)
-
-    return ne_f1, re_f1
+    
+    return {'p':ne_p, 'r':ne_r, 'f':ne_f1}, {'p':re_p, 'r':re_r, 'f':re_f1}
 
 
 def build_cmd_parser():
