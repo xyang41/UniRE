@@ -90,7 +90,7 @@ class EntRelJointDecoder(nn.Module):
         # Add GCN model
         self.add_adj = cfg.add_adj
         self.gcn_layers = cfg.gcn_layers
-        if self.gcn_layers > 0:
+        if self.add_adj and self.gcn_layers > 0:
             self.gcn_model = GNNBiaffine(cfg, input_size=self.encoder_output_size, vocab=self.vocab)
 
     def forward(self, batch_inputs):
