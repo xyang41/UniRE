@@ -36,7 +36,7 @@ from inputs.fields.map_token_field import MapTokenField
 from inputs.instance import Instance
 from inputs.datasets.dataset import Dataset
 from inputs.dataset_readers.ace_reader_for_joint_decoding import ACEReaderForJointDecoding
-from models.joint_decoding.joint_decoder import EntRelJointDecoder
+from models.joint_decoding.joint_decoder_add_param import EntRelJointDecoder
 from utils.nn_utils import get_n_trainable_parameters
 
 import neptune.new as neptune
@@ -299,7 +299,7 @@ def main():
     
     # Setup neptune
     run = neptune.init_run(project="xyang/UniRE-unsup", 
-                            mode="debug")
+                            mode="offline")
     run['params'] = vars(cfg)
     run["sys/tags"].add(cfg.data_dir.split('/')[-1])
     run["sys/tags"].add("seed="+str(SEED))
@@ -371,7 +371,11 @@ def main():
         run["sys/tags"].add("add_adj")
         run["sys/tags"].add("gcn_layer="+str(cfg.gcn_layers))
         run["sys/tags"].add('L' + ''.join(filter(str.isdigit, cfg.adj_dir.split('/')[-1])))
-
+        
+        run["sys/tags"].add("add_hyperparam")
+        run["sys/tags"].add("p1="+str(cfg.p1))
+        run["sys/tags"].add("p2="+str(cfg.p2))
+        
         adj_file_path = {'train': os.path.join(cfg.adj_dir, "train.adj"),
                          'dev': os.path.join(cfg.adj_dir, "dev.adj"), 
                          'test': os.path.join(cfg.adj_dir, "test.adj")}

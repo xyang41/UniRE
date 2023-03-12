@@ -103,7 +103,10 @@ class ConfigurationParer():
         group.add('--prune', '--prune', action='store_true', help='prune unsupervised structures hardly')
         group.add('-min_threshold', '--min_threshold', type=float, default=0.1, help='edge weights under the min_threshold will be set to 0.0.')
         group.add('-max_threshold', '--max_threshold', type=float, default=0.4, help='edge weights under the max_threshold will be set to 1.0.')
-
+        
+        # two graph integration
+        group.add('-p1', '--p1', type=float, default=1.0, help='the ratio of origin graph')
+        group.add('-p2', '--p2', type=float, default=1.0, help='the ratio of unsupervised graph')
 
     def add_optimizer_cfgs(self):
         """This function adds optimizer arguments

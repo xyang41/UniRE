@@ -45,7 +45,4 @@ class GNNBiaffine(nn.Module):
         batch_joint_score = torch.einsum('bxi, oij, byj -> boxy', batch_seq_encoder_repr, self.U,
                                          batch_seq_encoder_repr).permute(0, 2, 3, 1)
         
-        #print("size of batch_joint_score: ", batch_joint_score.size())
-        #print(batch_seq_encoder_repr.size(), self.U.size())
-        #input()
         return batch_joint_score

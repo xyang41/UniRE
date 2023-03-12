@@ -62,6 +62,7 @@ def flatten_and_batch_shift_indices(indices, sequence_length):
     if torch.max(indices) >= sequence_length or torch.min(indices) < 0:
         raise RuntimeError("All elements in indices should be in range (0, {})".format(sequence_length - 1))
     offsets = get_range_vector(indices.size(0), get_device_of(indices)) * sequence_length
+    
     for _ in range(len(indices.size()) - 1):
         offsets = offsets.unsqueeze(1)
 
@@ -88,7 +89,7 @@ def batched_index_select(target, indices, flattened_indices=None):
     Returns:
         torch.Tensor -- selected tensor
     """
-
+    
     if flattened_indices is None:
         # Shape: (batch_size * d_1 * ... * d_n)
         flattened_indices = flatten_and_batch_shift_indices(indices, target.size(1))
