@@ -129,11 +129,11 @@ class GCN(nn.Module):
     def init(self):
         stdv = 1/math.sqrt(self.out_dim)
         # randomly fill the param from a uniform distribution
-        self.W.data.uniform_(-stdv, stdv)
+        #self.W.data.uniform_(-stdv, stdv)
         self.b.data.uniform_(-stdv, stdv)
         
         # orthogonal init
-        #nn.init.orthogonal(self.W.data)
+        nn.init.orthogonal(self.W.data)
     
     # inp: a batch of input word_emb_seq, adj: a batch of adjacent matrix
     def forward(self, inp, adj, is_relu=True):

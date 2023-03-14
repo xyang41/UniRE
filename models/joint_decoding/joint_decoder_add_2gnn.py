@@ -8,7 +8,7 @@ from models.embedding_models.bert_embedding_model import BertEmbedModel
 from models.embedding_models.pretrained_embedding_model import PretrainedEmbedModel
 from modules.token_embedders.bert_encoder import BertLinear
 
-from models.graph_models.gnn_biaffine import GNNBiaffine
+from models.graph_models.gnn2_biaffine import GNNBiaffine
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,6 @@ class EntRelJointDecoder(nn.Module):
             self.rel_label = self.rel_label.cuda(device=self.device, non_blocking=True)
 
         self.element_loss = nn.CrossEntropyLoss(reduction='none')
-        self.element_loss_nll = nn.NLLLoss(reduction='none')
 
         # for label imbalance
         if self.label_imbalance:
@@ -93,9 +92,6 @@ class EntRelJointDecoder(nn.Module):
         self.gcn_layers = cfg.gcn_layers
         if self.add_adj and self.gcn_layers > 0:
             self.gcn_model = GNNBiaffine(cfg, input_size=self.encoder_output_size, vocab=self.vocab)
-            self.p = nn.Parameter(torch.FloatTensor(1))
-            self.p.data = torch.rand(1)
-            self.p.data.requires_grad = True
 
     def forward(self, batch_inputs):
         """forward
@@ -130,11 +126,8 @@ class EntRelJointDecoder(nn.Module):
         if self.add_adj:
             batch_graph = self.gcn_model(batch_inputs) if self.gcn_layers > 0 \
                                     else batch_inputs['adj_fw'].unsqueeze(dim=-1)
-            # add the norm
-            denom_row = torch.sum(batch_graph, dim=-1).unsqueeze(-1)
-            denom_row[denom_row == 0] = 1.0
-            batch_graph = batch_graph / denom_row
-
+            
+            batch_joint_score = batch_joint_score + batch_graph
 
         batch_normalized_joint_score = torch.softmax(
             batch_joint_score, dim=-1) * batch_inputs['joint_label_matrix_mask'].unsqueeze(-1).float()
@@ -150,31 +143,11 @@ class EntRelJointDecoder(nn.Module):
             results['all_rel_preds'] = rel_preds
 
             return results
-        
-        score = self.logit_dropout(batch_joint_score[batch_inputs['joint_label_matrix_mask']])
+
         # Element loss
-        '''
         results['element_loss'] = self.element_loss(
-            score, batch_inputs['joint_label_matrix'][batch_inputs['joint_label_matrix_mask']])
-        print(results['element_loss'].size())
-        print(results['element_loss'].sum())
-        input()
-        '''
+            self.logit_dropout(batch_joint_score[batch_inputs['joint_label_matrix_mask']]), batch_inputs['joint_label_matrix'][batch_inputs['joint_label_matrix_mask']])
 
-        # 拆分loss
-        Punire = torch.softmax(score, dim=-1)
-        batch_graph = batch_graph[batch_inputs['joint_label_matrix_mask']]
-        #print("p=", self.p)
-        #print(self.p.grad)
-        #input()
-        Punire = Punire + batch_graph
-        results['element_loss'] = self.element_loss_nll(torch.log(Punire), batch_inputs['joint_label_matrix'][batch_inputs['joint_label_matrix_mask']])
-        #print(element_loss_apart.size())
-        #print(element_loss_apart.sum())
-        #input()
-
-        #assert torch.equal(results['element_loss'], element_loss_apart)
-        
         # Add label imbalance in element loss
         gold_matrix = batch_inputs['joint_label_matrix'][batch_inputs['joint_label_matrix_mask']]
         if not self.label_imbalance:

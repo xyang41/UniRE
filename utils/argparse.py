@@ -98,6 +98,7 @@ class ConfigurationParer():
         # gcn related configurations
         group.add('--add_adj', '--add_adj', action='store_true', help='add adjacent matrix structure')
         group.add('-gcn_layers', '--gcn_layers', type=int, default=0, help='number of gcn layers.')
+        group.add('--is_unidirectional', '--is_unidirectional', action='store_true', help='set GCN as the unidirectional, and the default is bi-directional.')
         group.add('-gcn_dropout', '--gcn_dropout', type=float, default=0.1, help='dropout rate between gcn layers stacked up.')
         group.add('-adj_dropout', '--adj_dropout', type=float, default=0.0, help='adj matrices dropout rate.')
         group.add('--prune', '--prune', action='store_true', help='prune unsupervised structures hardly')

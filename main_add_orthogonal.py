@@ -36,7 +36,7 @@ from inputs.fields.map_token_field import MapTokenField
 from inputs.instance import Instance
 from inputs.datasets.dataset import Dataset
 from inputs.dataset_readers.ace_reader_for_joint_decoding import ACEReaderForJointDecoding
-from models.joint_decoding.joint_decoder import EntRelJointDecoder
+from models.joint_decoding.joint_decoder_add_orthg import EntRelJointDecoder
 from utils.nn_utils import get_n_trainable_parameters
 
 import neptune.new as neptune
@@ -303,6 +303,7 @@ def main():
     run['params'] = vars(cfg)
     run["sys/tags"].add(cfg.data_dir.split('/')[-1])
     run["sys/tags"].add("seed="+str(SEED))
+    run["sys/tags"].add("add_orthogonal")
 
     # define fields
     tokens = TokenField("tokens", "tokens", "tokens", True)
@@ -371,6 +372,8 @@ def main():
         run["sys/tags"].add("add_adj")
         run["sys/tags"].add("gcn_layer="+str(cfg.gcn_layers))
         run["sys/tags"].add('L' + ''.join(filter(str.isdigit, cfg.adj_dir.split('/')[-1])))
+        if cfg.is_unidirectional:
+            run["sys/tags"].add('uni-direction')
 
         adj_file_path = {'train': os.path.join(cfg.adj_dir, "train.adj"),
                          'dev': os.path.join(cfg.adj_dir, "dev.adj"), 

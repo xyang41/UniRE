@@ -8,7 +8,7 @@ from models.embedding_models.bert_embedding_model import BertEmbedModel
 from models.embedding_models.pretrained_embedding_model import PretrainedEmbedModel
 from modules.token_embedders.bert_encoder import BertLinear
 
-from models.graph_models.gnn_biaffine import GNNBiaffine
+from models.graph_models.gnn_orthg_biaffine import GNNBiaffine
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +92,6 @@ class EntRelJointDecoder(nn.Module):
         self.gcn_layers = cfg.gcn_layers
         if self.add_adj and self.gcn_layers > 0:
             self.gcn_model = GNNBiaffine(cfg, input_size=self.encoder_output_size, vocab=self.vocab)
-            self.p = nn.Parameter(torch.FloatTensor(1, 1))
-            #self.p.data.zero_()
 
     def forward(self, batch_inputs):
         """forward
@@ -128,15 +126,7 @@ class EntRelJointDecoder(nn.Module):
         if self.add_adj:
             batch_graph = self.gcn_model(batch_inputs) if self.gcn_layers > 0 \
                                     else batch_inputs['adj_fw'].unsqueeze(dim=-1)
-            
-            # add the norm
-            denom_row = torch.sum(batch_graph, dim=-1).unsqueeze(-1)
-            denom_row[denom_row == 0] = 1.0
-            batch_graph = batch_graph / denom_row
-            
-            #print("p=",self.p)
-            #input()
-            batch_joint_score = batch_joint_score + self.p * batch_graph # add parameter
+            batch_joint_score = batch_joint_score + batch_graph
 
         batch_normalized_joint_score = torch.softmax(
             batch_joint_score, dim=-1) * batch_inputs['joint_label_matrix_mask'].unsqueeze(-1).float()
