@@ -1,11 +1,11 @@
 	for layer in 0
 	do
-    gpu_id=3
-    CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=${gpu_id} python3 main_add_orthogonal.py --config_file new_config.yml \
+    gpu_id=0
+    CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=${gpu_id} python3 main_add_orthogonal_2gnn.py --config_file new_config.yml \
                 --fine_tune \
                 --add_adj \
                 --adj_dir adj/bert-base-cased/bert-attn-mean-eye-norm/bert-attn-layer${layer} \
-                --save_dir ckpt/ace2005_bert/bert-base-cased/bert-attn-mean-eye-norm/bert-attn-layer${layer}/5216/add_orthogonal_uni \
+                --save_dir ckpt/ace2005_bert/bert-base-cased/bert-attn-mean-eye-norm/bert-attn-layer${layer}/5216/add_orthogonal_uni_2gnn \
                 --device 0 \
                 --gcn_layers 1 \
                 --is_unidirectional

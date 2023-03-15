@@ -1,5 +1,5 @@
 #save_dir: ckpt/demo
-#data_dir: data/ACE2005/
+data_dir: data/entity-relation/ACE2005
 train_file: 02-matrix/train.json
 dev_file: 02-matrix/dev.json
 test_file: 02-matrix/test.json
