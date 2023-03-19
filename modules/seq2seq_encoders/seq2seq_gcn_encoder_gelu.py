@@ -142,7 +142,8 @@ class GCN(nn.Module):
         out = out + self.b
         
         if is_relu==True:
-            out = nn.functional.relu(out)
+            #out = nn.functional.relu(out)
+            out = gelu(out)
         
         return out
     

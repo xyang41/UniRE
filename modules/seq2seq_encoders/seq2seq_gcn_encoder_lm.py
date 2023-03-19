@@ -107,8 +107,9 @@ class GCNEncoder(nn.Module):
             else:
                 outputs = repr_fw
             
-            outputs = self.gcn_dropout(outputs)
-            outputs = self.layernorm(inputs + outputs)
+            #outputs = self.gcn_dropout(outputs)
+            #outputs = self.layernorm(inputs + outputs)
+            outputs = self.gcn_dropout(self.layernorm(outputs))
             inputs = outputs
 
         return outputs
